@@ -25,18 +25,17 @@ with open(os.path.join(ROOT, "password.txt")) as in_file:
     PASSWORD = in_file.read().strip()
 COOKIE_NAME = "camp"
 
+bkpf = ROOT+'/../backup_{0}'.format(time.strftime("%Y%m%d-%H%M%S"))
+backup = open(bkpf+'.h264', 'wb')
 
 class IndexHandler(tornado.web.RequestHandler):
-
     def get(self):
         if args.require_login and not self.get_secure_cookie(COOKIE_NAME):
             self.redirect("/login")
         else:
             self.render("index.html", port=args.port)
 
-
 class LoginHandler(tornado.web.RequestHandler):
-
     def get(self):
         self.render("login.html")
 
@@ -56,8 +55,17 @@ class ErrorHandler(tornado.web.RequestHandler):
 
 
 class WebSocket(tornado.websocket.WebSocketHandler):
+    def on_close(self):
+        if args.use_usb == False:
+            bkpf = ROOT+'/../backup_{0}'.format(time.strftime("%Y%m%d-%H%M%S"))
+            backup = open(bkpf+'.h264','wb')
+            camera.start_recording(backup)
 
     def on_message(self, message):
+        if args.use_usb == False:
+            camera.stop_recording()
+            backup.close()
+
         """Evaluates the function pointed to by json-rpc."""
 
         # Start an infinite loop when this is called
@@ -82,12 +90,10 @@ class WebSocket(tornado.websocket.WebSocketHandler):
             img.save(sio, "JPEG")
         else:
             camera.capture(sio, "jpeg", use_video_port=True)
-
         try:
             self.write_message(base64.b64encode(sio.getvalue()))
         except tornado.websocket.WebSocketClosedError:
             self.camera_loop.stop()
-
 
 parser = argparse.ArgumentParser(description="Starts a webserver that "
                                  "connects to a webcam.")
@@ -122,6 +128,8 @@ if args.resolution in resolutions:
         camera.resolution = resolutions[args.resolution]
 else:
     raise Exception("%s not in resolution options." % args.resolution)
+
+camera.start_recording(backup)
 
 handlers = [(r"/", IndexHandler), (r"/login", LoginHandler),
             (r"/websocket", WebSocket),
