@@ -1,0 +1,32 @@
+server.py:56: 
+server.py:57: class WebSocket(tornado.websocket.WebSocketHandler):
+server.py:58:     def on_close(self):
+server.py:59:-        if args.use_usb == False:
+server.py:59:+        if args.use_usb == False and args.backup == True:
+server.py:60:             bkpf = ROOT+'/../backup_{0}'.format(time.strftime("%Y%m%d-%H%M%S"))
+server.py:61:             backup = open(bkpf+'.h264','wb')
+server.py:62:             camera.start_recording(backup)
+server.py:63: 
+server.py:64:     def on_message(self, message):
+server.py:65:-        if args.use_usb == False:
+server.py:65:+        if args.use_usb == False and args.backup == True:
+server.py:66:             camera.stop_recording()
+server.py:67:             backup.close()
+server.py:68: 
+server.py:105:                     "a password to log in to webserver.")
+server.py:106: parser.add_argument("--use-usb", action="store_true", help="Use a USB "
+server.py:107:                     "webcam instead of the standard Pi camera.")
+server.py:108:+parser.add_argument("--backup", action="store_true", help="Backup "
+server.py:109:+                    "live session to .h264 file in local dir")
+server.py:110: parser.add_argument("--usb-id", type=int, default=0, help="The "
+server.py:111:                      "usb camera number to display")
+server.py:112: args = parser.parse_args()
+server.py:131: else:
+server.py:132:     raise Exception("%s not in resolution options." % args.resolution)
+server.py:133: 
+server.py:134:-camera.start_recording(backup)
+server.py:134:+if args.backup == True:
+server.py:135:+    camera.start_recording(backup)
+server.py:136: 
+server.py:137: handlers = [(r"/", IndexHandler), (r"/login", LoginHandler),
+server.py:138:             (r"/websocket", WebSocket),

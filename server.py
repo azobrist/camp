@@ -56,13 +56,13 @@ class ErrorHandler(tornado.web.RequestHandler):
 
 class WebSocket(tornado.websocket.WebSocketHandler):
     def on_close(self):
-        if args.use_usb == False:
+        if args.use_usb == False and args.backup == True:
             bkpf = ROOT+'/../backup_{0}'.format(time.strftime("%Y%m%d-%H%M%S"))
             backup = open(bkpf+'.h264','wb')
             camera.start_recording(backup)
 
     def on_message(self, message):
-        if args.use_usb == False:
+        if args.use_usb == False and args.backup == True:
             camera.stop_recording()
             backup.close()
 
@@ -105,6 +105,8 @@ parser.add_argument("--require-login", action="store_true", help="Require "
                     "a password to log in to webserver.")
 parser.add_argument("--use-usb", action="store_true", help="Use a USB "
                     "webcam instead of the standard Pi camera.")
+parser.add_argument("--backup", action="store_true", help="Backup "
+                    "live session to .h264 file in local dir")
 parser.add_argument("--usb-id", type=int, default=0, help="The "
                      "usb camera number to display")
 args = parser.parse_args()
@@ -129,7 +131,8 @@ if args.resolution in resolutions:
 else:
     raise Exception("%s not in resolution options." % args.resolution)
 
-camera.start_recording(backup)
+if args.backup == True:
+    camera.start_recording(backup)
 
 handlers = [(r"/", IndexHandler), (r"/login", LoginHandler),
             (r"/websocket", WebSocket),
